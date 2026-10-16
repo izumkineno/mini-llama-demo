@@ -3,16 +3,45 @@
 #include "engine.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <thread>
+
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 #include "llama.h"
 
-// llama 日志回调：经 llama_log_set 接管（Step 2 要求），统一打 stderr。
-// 签名跟随 llama.h 的 llama_log_callback（level 类型为 ggml_log_level，随 llama.h
-// 引入的 ggml.h 提供；若 pin 版本头文件无此枚举，可把首参改 int，布局相同）。
+// llama 日志回调：经 llama_log_set 接管（Step 2 要求），默认只放行敞口级信息。
+// 规则：WARN/ERROR 全放行；INFO 仅放行 "llama_version" 锚点行（AC1 断言依赖）；
+// CONT 仅在上一放行行"未以换行结尾"时跟随（真续行），否则视为新消息丢弃——
+// 这恰好滤掉 INFO 刷屏续片与 load 进度点阵（前一行以 \n 结束），不误伤跨行报错。
+// 调试时置 LAI_VERBOSE_LOG=1 恢复全量透出（AC7 归档即用此模式采集）。
+static bool g_last_log_open = false;  // 上一放行行是否未闭合（无尾随 \n）
 static void LlamaLogCallback(ggml_log_level level, const char* text, void* /*user_data*/) {
-    (void)level;  // MVP 不分级过滤，全量透出便于归档 offload 日志（AC7）
-    if (text) std::fputs(text, stderr);
+    if (!text) return;
+    if (std::getenv("LAI_VERBOSE_LOG")) {
+        std::fputs(text, stderr);
+        g_last_log_open = false;
+        return;
+    }
+    bool fwd = false;
+    if (level >= GGML_LOG_LEVEL_WARN) {
+        fwd = true;
+    } else if (level == GGML_LOG_LEVEL_INFO && std::strncmp(text, "llama_version", 13) == 0) {
+        fwd = true;
+    } else if (level == GGML_LOG_LEVEL_CONT && g_last_log_open) {
+        fwd = true;
+    }
+    if (fwd) {
+        std::fputs(text, stderr);
+        const size_t n = std::strlen(text);
+        g_last_log_open = (n > 0 && text[n - 1] != '\n');
+    } else if (level != GGML_LOG_LEVEL_CONT) {
+        g_last_log_open = false;  // 被丢弃的整行消息不续接后续 CONT
+    }
 }
 
 EngineRuntime::EngineRuntime() = default;
@@ -42,7 +71,34 @@ bool EngineRuntime::Init(const std::string& gguf_path) {
 
     llama_model_params mparams = llama_model_default_params();
     mparams.n_gpu_layers = kEngineNGpuLayers;  // C3：99 = 尽量全 offload
+    // load 期 stderr 重定向：llama 内部有直接 stderr 写（EOG 进度点阵 72 点，
+    // 经 LAI_LOG_DEBUG 探针证实不走 log 回调），此处 fd 级静默。VERBOSE 下跳过，
+    // 保留原生诊断；加载失败的对外报错走下面自有 fprintf，不受影响。
+#ifdef _WIN32
+    int saved_stderr = -1;
+    if (!std::getenv("LAI_VERBOSE_LOG")) {
+        std::fflush(stderr);
+        saved_stderr = _dup(_fileno(stderr));
+        if (saved_stderr != -1) {
+            int nul = _open("NUL", _O_WRONLY);
+            if (nul != -1) {
+                _dup2(nul, _fileno(stderr));
+                _close(nul);
+            } else {
+                _close(saved_stderr);
+                saved_stderr = -1;
+            }
+        }
+    }
+#endif
     model_ = llama_model_load_from_file(gguf_path.c_str(), mparams);
+#ifdef _WIN32
+    if (saved_stderr != -1) {
+        std::fflush(stderr);
+        _dup2(saved_stderr, _fileno(stderr));
+        _close(saved_stderr);
+    }
+#endif
     // AC1 锚点分支二：GGUF 损坏/加载失败 → stderr 含路径 + 非零退出。
     if (!model_) {
         std::fprintf(stderr, "模型加载失败（文件可能损坏）：%s\n", gguf_path.c_str());
