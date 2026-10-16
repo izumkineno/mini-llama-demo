@@ -1,0 +1,1 @@
+Quantization of neural networks can significantly reduce inference latency while maintaining high translation quality.

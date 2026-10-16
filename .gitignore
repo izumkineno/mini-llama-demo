@@ -1,0 +1,30 @@
+# 构建产物（两步重建，见 README-build.md）
+build/
+# pytest 运行时（wheel 直解，删了按 open-questions.md 补记④重建）
+.pylibs/
+# 临时的 pip/uv 缓存
+.uv-cache/
+.wheels/
+# 测试自生成的损坏探针（AC1 用例缺失时自动重建）
+tests/assets/corrupt.gguf.bad
+# 根目录调试日志（不应提交）
+/*.log
+# 编辑器 / IDE（CLion）
+.vs/
+.idea/
+cmake-build-debug/
+# Python 缓存
+__pycache__/
+.pytest_cache/
+# third_party/llama：二进制不入仓，只提交 pin + 脚本 + .def + 证据文本
+# clean checkout 还原：powershell -ExecutionPolicy Bypass -File third_party\llama\fetch_assets.ps1
+third_party/llama/bin/
+third_party/llama/include/
+third_party/llama/lib/
+third_party/llama/*.zip
+third_party/llama/exports.txt
+third_party/llama/*.exp
+
+/.omd/
+/acceptance/
+

@@ -1,0 +1,39 @@
+# VERSION.pin — llama.cpp 预编译包 pin（Step 1，按 P3 选择标准）
+# 复核状态：主会话已复核（review 点，非签字）——六项齐全 + 硬门槛证据链可追溯
+# 抓取/下载日期：2026-10-16
+
+tag=b11669
+tag_alias=v0.7.0
+commit=620d222
+toolkit_minor=12.4
+# P3 选择标准执行记录：首选最新 Release 的 CUDA 12.8 包——b11669 asset 清单无 12.8 包
+# （仅 12.4 / 13.4 两档，见 asset 清单），按"回退到最近满足的 Release"规则选 12.4 档：
+# 硬门槛=官方 win-cuda 包多架构 SASS（含 sm_86/sm_89，docs/06 §2 多架构编译）+ GGML_BACKEND_DL
+# 形态（ggml-cuda.dll 独立后端插件，见 RUNTIME_DLLS.txt）。13.4 档未选：驱动要求高于 R570，
+# C3 矩阵 13.x 行为"中"证据，从保守取 12.4。
+
+# 主包（llama.dll + ggml 后端 + 工具链 exe）
+pkg_main_name=llama-b11669-bin-win-cuda-12.4-x64.zip
+pkg_main_size=266582698
+pkg_main_sha256=C2DA1F73ED176AE093AC5ACEB978A7B167A16113F6D74C6789EEAEE2135CB8DC
+pkg_main_url=https://github.com/ggml-org/llama.cpp/releases/download/b11669/llama-b11669-bin-win-cuda-12.4-x64.zip
+
+# CUDA 运行时补充包（官方分开发布：cublas/cublasLt/cudart 三 DLL）
+pkg_cudart_name=cudart-llama-bin-win-cuda-12.4-x64.zip
+pkg_cudart_size=391443627
+pkg_cudart_sha256=8C79A9B226DE4B3CACFD1F83D24F962D0773BE79F1E7B75C6AF4DED7E32AE1D6
+pkg_cudart_url=https://github.com/ggml-org/llama.cpp/releases/download/b11669/cudart-llama-bin-win-cuda-12.4-x64.zip
+
+# 头文件（同 tag 源码取头，仅用于隐式链接声明；C1 零源码编译不受影响）
+headers_source_tag=b11669
+headers=llama.h(90731B) ggml.h(116594B) ggml-alloc.h(3689B) ggml-backend.h(27570B) ggml-opt.h(14040B) llama-cpp.h(1102B)
+headers_base_url=https://raw.githubusercontent.com/ggml-org/llama.cpp/b11669/
+
+# 导入库（官方 win 包不带 .lib；由 llama.dll 经 dumpbin /exports → .def → lib.exe 生成，280 exports）
+import_lib=lib/llama.lib
+import_lib_tool=VS2022-MSVC-14.44.35207-dumpbin+lib
+import_lib_deffile=llama.def
+
+# H2 验证（前半，Step 1 侧）：包内 CUDA 运行时 DLL 存在性检查
+# cudart64_12.dll + cublas64_12.dll + cublasLt64_12.dll 均在 bin/（见 RUNTIME_DLLS.txt 前 3 行）→ 通过
+# 运行机驱动要求（C3 矩阵 12.4 行）：R550+（本机 R610，满足；见 README-build.md）

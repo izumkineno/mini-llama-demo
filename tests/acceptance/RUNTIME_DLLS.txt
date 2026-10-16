@@ -1,0 +1,30 @@
+# RUNTIME_DLLS.txt —— pre-flight 清单 = 隐式依赖闭包 ∪ 后端白名单（v4 M4）
+# 生成依据：dumpbin /dependents 实测（证据见 acceptance/AC7.log）
+# 闭包链：exe→llama.dll→{ggml.dll,ggml-base.dll}；ggml-base.dll→libomp.dll；
+#   ggml-cuda.dll(dlopen)→{cudart64_12,cublas64_12,nvcuda.dll}；cublas64_12→cublasLt64_12；
+#   ggml-cpu-*.dll(dlopen)→{ggml-base.dll,libomp.dll}
+# 注意：nvcuda.dll 由 NVIDIA 驱动提供（System32），不在包内，不列清单（见 C3 驱动矩阵）。
+# 包内多余（llama-*-impl.dll/llama-common.dll/mtmd.dll/ggml-rpc.dll）= 工具 impl，
+# 按 M4 记 info 不阻塞（差异处置见 AC7.log）。
+llama.dll
+ggml.dll
+ggml-base.dll
+libomp.dll
+ggml-cpu-alderlake.dll
+ggml-cpu-cannonlake.dll
+ggml-cpu-cascadelake.dll
+ggml-cpu-cooperlake.dll
+ggml-cpu-haswell.dll
+ggml-cpu-icelake.dll
+ggml-cpu-ivybridge.dll
+ggml-cpu-piledriver.dll
+ggml-cpu-sandybridge.dll
+ggml-cpu-sapphirerapids.dll
+ggml-cpu-skylakex.dll
+ggml-cpu-sse42.dll
+ggml-cpu-x64.dll
+ggml-cpu-zen4.dll
+ggml-cuda.dll
+cudart64_12.dll
+cublas64_12.dll
+cublasLt64_12.dll

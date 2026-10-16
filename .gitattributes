@@ -1,0 +1,9 @@
+# 换行符锁定：B1 模板做 sha256 字节校验，签出时若被转成 CRLF 会直接
+# 触发 TEMPLATE_DRIFT（exit 2），故模板与 sidecar 强制 LF。
+* text=auto
+prompts/*.txt text eol=lf
+prompts/*.sha256 text eol=lf
+prompts/*.jinja.source text eol=lf
+prompts/*.json text eol=lf
+tests/acceptance/golden/*.txt text eol=lf
+tests/acceptance/golden/*.json text eol=lf
