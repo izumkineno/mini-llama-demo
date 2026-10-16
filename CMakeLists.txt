@@ -17,6 +17,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# C++ 运行时静态链接（/MT；Debug 自动映射 /MTd）：exe 自身零 VC redist 依赖。
+# 安全前提：与 llama.dll 的边界是纯 C API，无 CRT 对象跨越（堆内存谁分配谁释放，
+# 见 engine.cpp：model/batch/sampler 的 alloc/free 全在 DLL 侧配对）。注意 upstream
+# DLL 本身仍是 /MD 构建（见 README-build.md 运行机要求），目标机仍需 VC++ Redist。
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+
 # —— llama 预编译包位置（Step 1 pin；尚在下载中，此处只按约定写路径）——
 set(LLAMA_DIR "${CMAKE_SOURCE_DIR}/third_party/llama")
 set(LLAMA_INCLUDE_DIR "${LLAMA_DIR}/include")

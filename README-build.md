@@ -41,6 +41,9 @@ cmake --build build
 - Toolkit minor：12.4（见 `VERSION.pin`）→ 查 C3 矩阵 12.4 行 → **驱动 R550+**。
 - 本机：RTX 4070 SUPER + 驱动 R610（610.62）→ ✅ 满足。
 - CUDA 运行时随包自带（cudart/cublas/cublasLt 在 `bin/`），运行机无需另装 Toolkit。
+- VC++ Redist：exe 自身 /MT 静态链接（零依赖）；但 upstream DLL（llama/ggml/cudart…）
+  均为 /MD 构建（dumpbin 实测），运行机仍需安装 **VC++ Redist 2015+**（x64）。要连
+  DLL 一起静态化只能从源码以 /MT 重编 upstream，超出预编译路线范围。
 
 ## 运行
 
