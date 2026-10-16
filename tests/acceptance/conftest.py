@@ -25,8 +25,9 @@ def exe_path() -> Path:
         p = Path(os.environ["LAI_EXE"])
         assert p.is_file(), f"$LAI_EXE 不存在: {p}"
         return p
-    for cand in ("build/lai-translate.exe", "build/Release/lai-translate.exe",
-                 "build/Debug/lai-translate.exe", "lai-translate.exe"):
+    for cand in ("dist/lai-translate.exe", "build/lai-translate.exe",
+                 "build/Release/lai-translate.exe", "build/Debug/lai-translate.exe",
+                 "lai-translate.exe"):
         p = REPO / cand
         if p.is_file():
             return p

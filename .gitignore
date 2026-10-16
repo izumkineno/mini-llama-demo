@@ -1,5 +1,7 @@
 # 构建产物（两步重建，见 README-build.md）
 build/
+# 产物目录（cmake --build 自动装配：exe + llama DLL + VC Redist，可重建）
+dist/
 # pytest 运行时（wheel 直解，删了按 open-questions.md 补记④重建）
 .pylibs/
 # 临时的 pip/uv 缓存

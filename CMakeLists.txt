@@ -23,7 +23,44 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # DLL 本身仍是 /MD 构建（见 README-build.md 运行机要求），目标机仍需 VC++ Redist。
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 
-# —— llama 预编译包位置（Step 1 pin；尚在下载中，此处只按约定写路径）——
+# —— 产物目录：dist/（exe + 全部运行时 DLL）；build/ 只留 CMake 中间文件 ——
+# （单配置生成器 NMake，此变量直接生效；多配置生成器需改用按配置变量。）
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist")
+
+# —— VC Redist app-local：upstream DLL 为 /MD 构建，产物自带 3 个 VC DLL，
+# 目标机免装 Redist。UCRT（api-ms-win-crt-*）是 Win10+ 收件箱组件，不随包。
+# 来源优先级：随 cl 同安装的 VC/Redist（多版本取最新）→ System32（须本机构建机已装）。
+if(MSVC)
+    get_filename_component(_cl_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    get_filename_component(_vc_dir "${_cl_dir}/../../../../../.." ABSOLUTE)
+    file(GLOB _vc_crt_dirs "${_vc_dir}/Redist/MSVC/*/x64/Microsoft.VC143.CRT")
+    set(_vc_dll_names msvcp140.dll vcruntime140.dll vcruntime140_1.dll)
+    set(VC_REDIST_DLLS "")
+    if(_vc_crt_dirs)
+        list(SORT _vc_crt_dirs COMPARE NATURAL ORDER DESCENDING)
+        list(GET _vc_crt_dirs 0 _vc_crt_latest)
+        foreach(_n IN LISTS _vc_dll_names)
+            if(EXISTS "${_vc_crt_latest}/${_n}")
+                list(APPEND VC_REDIST_DLLS "${_vc_crt_latest}/${_n}")
+            endif()
+        endforeach()
+    endif()
+    if(NOT VC_REDIST_DLLS)
+        foreach(_n IN LISTS _vc_dll_names)
+            if(EXISTS "$ENV{SystemRoot}/System32/${_n}")
+                list(APPEND VC_REDIST_DLLS "$ENV{SystemRoot}/System32/${_n}")
+            endif()
+        endforeach()
+        if(VC_REDIST_DLLS)
+            message(STATUS "VC Redist: fallback to System32")
+        endif()
+    endif()
+    if(NOT VC_REDIST_DLLS)
+        message(WARNING "VC Redist DLLs not found; dist/ will lack msvcp140/vcruntime140(_1) (target machine needs VC++ Redist).")
+    endif()
+endif()
+
+# —— llama 预编译包位置（Step 1 pin；VERSION.pin 锁定 tag/URL/sha256）——
 set(LLAMA_DIR "${CMAKE_SOURCE_DIR}/third_party/llama")
 set(LLAMA_INCLUDE_DIR "${LLAMA_DIR}/include")
 set(LLAMA_LIB "${LLAMA_DIR}/lib/llama.lib")
@@ -61,4 +98,12 @@ if(LLAMA_DLLS)
     )
 else()
     message(WARNING "No DLLs found in ${LLAMA_BIN_DIR} (Step 1 package not landed yet?); re-configure after download.")
+endif()
+
+# VC Redist 随 exe：与上面同一目标目录（dist/），目标机免装 Redist。
+if(VC_REDIST_DLLS)
+    add_custom_command(TARGET lai-translate POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${VC_REDIST_DLLS} $<TARGET_FILE_DIR:lai-translate>
+        COMMENT "Copying VC Redist DLLs next to lai-translate.exe"
+    )
 endif()

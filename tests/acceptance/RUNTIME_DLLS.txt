@@ -4,6 +4,8 @@
 #   ggml-cuda.dll(dlopen)→{cudart64_12,cublas64_12,nvcuda.dll}；cublas64_12→cublasLt64_12；
 #   ggml-cpu-*.dll(dlopen)→{ggml-base.dll,libomp.dll}
 # 注意：nvcuda.dll 由 NVIDIA 驱动提供（System32），不在包内，不列清单（见 C3 驱动矩阵）。
+# VC CRT app-local（产物自带，目标机免装 Redist；UCRT 为 Win10+ 收件箱组件，不随包不列清单）：
+# msvcp140/vcruntime140(_1) 来源见 CMakeLists（VC/Redist 优先，System32 回退）。
 # 包内多余（llama-*-impl.dll/llama-common.dll/mtmd.dll/ggml-rpc.dll）= 工具 impl，
 # 按 M4 记 info 不阻塞（差异处置见 AC7.log）。
 llama.dll
@@ -28,3 +30,6 @@ ggml-cuda.dll
 cudart64_12.dll
 cublas64_12.dll
 cublasLt64_12.dll
+msvcp140.dll
+vcruntime140.dll
+vcruntime140_1.dll

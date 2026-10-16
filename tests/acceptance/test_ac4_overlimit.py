@@ -10,7 +10,7 @@
 #     转漂移断言（stderr 含 TEMPLATE_DRIFT: 行）并 skip 单独报告为 DRIFT。
 #
 # 运行前置：exe 已构建 + GGUF 可用（exe 启动即加载模型，无模型无法验证留循环）。
-#   exe 发现顺序：$LAI_EXE > build/lai-translate.exe > build/Release/ > build/Debug/ > ./
+#   exe 发现顺序：$LAI_EXE > dist/lai-translate.exe > build/…（与 conftest 同序）
 #   gguf 发现顺序：$LAI_GGUF > tests/assets/*.gguf（缺失则全文件 skip）。
 import glob
 import os
@@ -28,8 +28,9 @@ TIMEOUT_S = 600  # 模型加载 + 4000 scalar prefill（CUDA 真机）
 def find_exe() -> Path:
     if os.environ.get("LAI_EXE"):
         return Path(os.environ["LAI_EXE"])
-    for cand in ("build/lai-translate.exe", "build/Release/lai-translate.exe",
-                 "build/Debug/lai-translate.exe", "lai-translate.exe"):
+    for cand in ("dist/lai-translate.exe", "build/lai-translate.exe",
+                 "build/Release/lai-translate.exe", "build/Debug/lai-translate.exe",
+                 "lai-translate.exe"):
         p = REPO / cand
         if p.is_file():
             return p

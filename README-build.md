@@ -33,7 +33,9 @@ cmake --build build
 > ABI info` 阶段 hang（两次复现，无 cl 子进程；直接 cl 探针正常），降为 NMake
 > Makefiles（同 cl 同 flags，非 E2 否决的 MSBuild）。configure 5.6s 一次通过。
 
-产物：`build\lai-translate.exe` + 同目录 DLL（POST_BUILD 自动拷贝；22 项装载关键清单见 `tests\acceptance\RUNTIME_DLLS.txt`）。
+产物：`dist\lai-translate.exe` + 同目录 DLL（llama 运行时 + VC Redist 3 件，POST_BUILD
+自动拷贝；25 项装载关键清单见 `tests\acceptance\RUNTIME_DLLS.txt`）。`build/` 只留
+CMake 中间文件（obj/CMakeFiles/CMakeCache），可随时删除重建。
 
 ## 运行机要求（C3 矩阵查表 + Release note）
 
@@ -41,14 +43,14 @@ cmake --build build
 - Toolkit minor：12.4（见 `VERSION.pin`）→ 查 C3 矩阵 12.4 行 → **驱动 R550+**。
 - 本机：RTX 4070 SUPER + 驱动 R610（610.62）→ ✅ 满足。
 - CUDA 运行时随包自带（cudart/cublas/cublasLt 在 `bin/`），运行机无需另装 Toolkit。
-- VC++ Redist：exe 自身 /MT 静态链接（零依赖）；但 upstream DLL（llama/ggml/cudart…）
-  均为 /MD 构建（dumpbin 实测），运行机仍需安装 **VC++ Redist 2015+**（x64）。要连
-  DLL 一起静态化只能从源码以 /MT 重编 upstream，超出预编译路线范围。
+- VC++ Redist：exe 自身 /MT 静态链接（零依赖）；upstream DLL 所需的
+  msvcp140/vcruntime140(_1) 已 app-local 随产物（`dist/` 内 3 件，构建时从
+  VC/Redist 自动拷贝），运行机免装 Redist（UCRT 是 Win10+ 收件箱组件）。
 
 ## 运行
 
 ```bat
-build\lai-translate.exe E:\tools\smodeltrans\models\downloads\hy-mt2-1.8b-q4\Hy-MT2-1.8B-Q4_K_M.gguf
+dist\lai-translate.exe E:\tools\smodeltrans\models\downloads\hy-mt2-1.8b-q4\Hy-MT2-1.8B-Q4_K_M.gguf
 ```
 
 - 模板：B1（`prompts\hy-mt2-v20261016.txt` + `.sha256`，启动哈希校验）。
@@ -66,7 +68,7 @@ python -m pytest tests\acceptance -q --timeout=600 -p no:cacheprovider
   由 wheel 直解而来；删了重跑需按 `.omd/plans/open-questions.md` 执行补记④重建）。
 - 期望：26 passed（AC1–AC6）；AC7 见 `acceptance\AC7.log`（clean 构建 + offload）。
 - exe 可在任意目录启动：模板目录按 CWD/prompts → exe 同级 prompts/ →
-  exe 上级 prompts/ 顺序解析（`build/` 内启动自动找到仓库 `prompts/`）。
+  exe 上级 prompts/ 顺序解析（`dist/` 内启动自动找到仓库 `prompts/`）。
 
 ## 目录结构
 
@@ -76,7 +78,8 @@ python -m pytest tests\acceptance -q --timeout=600 -p no:cacheprovider
 ├── prompts/            B1 模板 + .sha256 + META 取证 + sampling.pin.json + 上游 README 存档
 ├── third_party/llama/  预编译包：bin/（33 DLL）include/ lib/llama.lib
 │                       pkg.zip/pkg-main.zip（原包留存，可复现）VERSION.pin
-├── build/              构建产物（exe + 33 DLL，可删后重建）
+├── build/              CMake 中间文件（obj/CMakeFiles/Cache，可删后重建）
+├── dist/               产物（exe + llama DLL + VC Redist 3 件，开箱即跑）
 ├── acceptance/         证据归档（pytest 总日志/AC7.log/offload 日志/B1 探针）
 ├── docs/               01–06 调研文档
 ├── .omd/               访谈 spec / 冻结计划 v4 / 问题决议
