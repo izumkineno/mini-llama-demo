@@ -13,6 +13,15 @@ cmake_minimum_required(VERSION 3.26)
 
 project(lai-translate CXX)
 
+# E1 工具链 pin：本工程仅支持 MSVC（VS2022 + NMake，见 README-build.md）。
+# MinGW 在此配置下会静默产出坏包：exe 动态依赖 libgcc_s_seh-1.dll/libstdc++-6.dll
+# （下面的 POST_BUILD 只处理 MSVC 的 VC Redist，不拷贝 GCC 运行时，且它们非系统组件），
+# 拷走即 0xC0000135 无法启动；在 dev 机上即使能启动也可能因 PATH 里混入外来版本
+# libstdc++ 而 0xC0000005 崩溃（2026-10-16 实测）。非 MSVC 直接 fail-fast。
+if(NOT MSVC)
+    message(FATAL_ERROR "仅支持 MSVC 工具链（VS2022 + NMake）；当前 C++ 编译器：${CMAKE_CXX_COMPILER}。CLion 请把 toolchain 切到 Visual Studio 后重新 configure。")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
