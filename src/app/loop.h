@@ -10,6 +10,8 @@
 //   - ralplan O-D（D1）：默认中→英；文案待用户转正。
 #pragma once
 
+namespace lai {
+
 class EngineRuntime;
 class PromptManager;
 
@@ -17,3 +19,5 @@ class PromptManager;
 //   0=正常（/quit、/exit、首行/中段 EOF）；1=翻译 infra 失败（fail-fast，P4）。
 // 超限/未知命令/编码失败均为"留循环"（不返回）。
 int RunLoop(EngineRuntime& engine, PromptManager& prompts);
+
+}  // namespace lai

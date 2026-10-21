@@ -20,6 +20,8 @@
 #include "llama.h"  // C 接口唯一来源；过 DLL 边界的只有 C 类型/llama.h 结构体
                     // （本侧的 string/vector 不出本 translation unit 边界，docs/03 §6.1）
 
+namespace lai {
+
 // Step 2 pin：n_ctx=8192（C4），n_batch=512，n_gpu_layers=99（C3 全 offload）。
 inline constexpr int kEngineNCtx = 8192;
 inline constexpr int kEngineNBatch = 512;
@@ -44,13 +46,13 @@ class EngineRuntime {
     bool EnsureCudaAvailable();
 
     // Step 2 透传原语：原样透传 llama_tokenize，不做任何 flags 策略。
-    // 正式 flags 策略归 PromptSpec（B1 两段式 / B2 整串快照）。
+    // 正式 flags 策略归 PromptSpec（内嵌模板两段式）所有。
     bool Tokenize(const std::string& text, bool add_special, bool parse_special,
                   std::vector<llama_token>& out_tokens);
 
     // 单轮生成：每轮先重建 context（清空 KV，见实现注释）→ prefill chunking →
     // decode batch=1 → 每次采样后 llama_vocab_is_eog 判停。
-    // sampler 由调用方经 prompt_spec CreateSamplerChain 创建并持有（B1/B2 通用）。
+    // sampler 由调用方经 prompt/prompt_spec.h CreateSamplerChain 创建并持有。
     // 成功返回 true；失败已打 stderr，调用方按 P4 fail-fast（exit 1）。
     bool Generate(const std::vector<llama_token>& prompt_tokens, llama_sampler* sampler, std::string& out_text);
 
@@ -66,3 +68,5 @@ class EngineRuntime {
     const llama_vocab* vocab_ = nullptr;
     std::string gguf_path_;  // 留存用于重建 context 与报错（含路径要求）
 };
+
+}  // namespace lai

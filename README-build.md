@@ -73,7 +73,7 @@ python -m pytest tests\acceptance -q --timeout=600 -p no:cacheprovider
 ## 目录结构
 
 ```
-├── src/                C++ 源码（engine/prompt_spec/loop/i18n_count/main）
+├── src/                C++ 源码（main 装配；core/ 引擎；prompt/ 模板+采样；app/ REPL；util/ 工具）
 ├── tests/acceptance/   pytest 验收（conftest + test_ac1–ac6 + golden/ + RUNTIME_DLLS.txt）
 ├── prompts/            B1 模板 + .sha256 + META 取证 + sampling.pin.json + 上游 README 存档
 ├── third_party/llama/  预编译包：bin/（33 DLL）include/ lib/llama.lib

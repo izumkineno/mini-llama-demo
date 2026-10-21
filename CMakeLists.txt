@@ -75,12 +75,15 @@ set(LLAMA_INCLUDE_DIR "${LLAMA_DIR}/include")
 set(LLAMA_LIB "${LLAMA_DIR}/lib/llama.lib")
 set(LLAMA_BIN_DIR "${LLAMA_DIR}/bin")
 
+# 源码布局（src/）：main.cpp 装配入口；core/ 推理引擎（Step 2）；prompt/ 模板+采样
+# （Step 3）；app/ REPL（Step 4）；util/ 通用工具。include 风格见 src/README.md。
 add_executable(lai-translate
     src/main.cpp
-    src/engine.cpp
-    src/prompt_spec.cpp
-    src/loop.cpp
-    src/i18n_count.cpp
+    src/core/engine.cpp
+    src/prompt/prompt_spec.cpp
+    src/app/loop.cpp
+    src/app/i18n_count.cpp
+    src/util/sha256.cpp
 )
 
 target_include_directories(lai-translate PRIVATE
@@ -88,7 +91,7 @@ target_include_directories(lai-translate PRIVATE
     "${LLAMA_INCLUDE_DIR}"
 )
 
-# C2：隐式链接导入库（C++ 对象不过 DLL 边界，见 engine.h 注释）。
+# C2：隐式链接导入库（C++ 对象不过 DLL 边界，见 core/engine.h 注释）。
 target_link_libraries(lai-translate PRIVATE "${LLAMA_LIB}")
 
 # MSVC：/utf-8 保证中文注释与 stderr 文案按 UTF-8 编译（pytest 按 UTF-8 匹配文案）；

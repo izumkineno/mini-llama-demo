@@ -1,6 +1,6 @@
 // engine.cpp —— EngineRuntime 实现（Step 2）
 // 对应计划条款同 engine.h；API 链路对照 docs/03 §2 最小示例。
-#include "engine.h"
+#include "core/engine.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -14,13 +14,16 @@
 
 #include "llama.h"
 
+namespace lai {
+namespace {
+
 // llama 日志回调：经 llama_log_set 接管（Step 2 要求），默认只放行敞口级信息。
 // 规则：WARN/ERROR 全放行；INFO 仅放行 "llama_version" 锚点行（AC1 断言依赖）；
 // CONT 仅在上一放行行"未以换行结尾"时跟随（真续行），否则视为新消息丢弃——
 // 这恰好滤掉 INFO 刷屏续片与 load 进度点阵（前一行以 \n 结束），不误伤跨行报错。
 // 调试时置 LAI_VERBOSE_LOG=1 恢复全量透出（AC7 归档即用此模式采集）。
-static bool g_last_log_open = false;  // 上一放行行是否未闭合（无尾随 \n）
-static void LlamaLogCallback(ggml_log_level level, const char* text, void* /*user_data*/) {
+bool g_last_log_open = false;  // 上一放行行是否未闭合（无尾随 \n）
+void LlamaLogCallback(ggml_log_level level, const char* text, void* /*user_data*/) {
     if (!text) return;
     if (std::getenv("LAI_VERBOSE_LOG")) {
         std::fputs(text, stderr);
@@ -43,6 +46,8 @@ static void LlamaLogCallback(ggml_log_level level, const char* text, void* /*use
         g_last_log_open = false;  // 被丢弃的整行消息不续接后续 CONT
     }
 }
+
+}  // namespace
 
 EngineRuntime::EngineRuntime() = default;
 
@@ -244,3 +249,5 @@ bool EngineRuntime::Generate(const std::vector<llama_token>& prompt_tokens, llam
     llama_batch_ext_free(batch);
     return true;
 }
+
+}  // namespace lai

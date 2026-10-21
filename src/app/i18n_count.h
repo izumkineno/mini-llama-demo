@@ -12,6 +12,8 @@
 #include <cstddef>
 #include <string>
 
+namespace lai {
+
 // AC4 口径：单行输入上限（Unicode scalar，归一化后计数）。恰 4000 放行，4001 拒绝。
 inline constexpr std::size_t kMaxInputScalars = 4000;
 
@@ -32,3 +34,5 @@ void StripTrailingCR(std::string& line);
 
 // 剥行首一个 UTF-8 BOM（EF BB BF），剥离后计数。
 void StripLeadingBOM(std::string& line);
+
+}  // namespace lai
